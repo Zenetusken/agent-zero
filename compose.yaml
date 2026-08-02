@@ -1,0 +1,30 @@
+services:
+  agent-zero:
+    # Local overlay: stock v2.6 + harness-fix integration tree baked into the
+    # /git/agent-zero seed (fork Zenetusken/agent-zero, integration/live-deployment
+    # @ 8890c882). Rebuild via Dockerfile.local-overlay, then recreate the
+    # container for the seed to take effect. Fallback: agent0ai/agent-zero:v2.6
+    image: agent-zero:local
+    container_name: agent-zero
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:5080:80"
+
+    volumes:
+      - agent_zero_usr:/a0/usr
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+
+    dns_opt:
+      - "timeout:2"
+      - "attempts:3"
+
+volumes:
+  agent_zero_usr:
+    name: agent_zero_usr

@@ -1,0 +1,20 @@
+# Overlay image: bakes the harness-fix integration tree into the stock v2.6 runtime.
+# Source: fork Zenetusken/agent-zero, branch integration/live-deployment.
+#
+# Mechanism: upstream seeds /git/agent-zero at image build; on container start,
+# /ins/copy_A0.sh copies it into /a0 (no-clobber, first start only). Updating the
+# seed here means a recreated container starts with the fixed tree.
+#
+# Rebuild after updating the integration branch:
+#   docker build -f Dockerfile.local-overlay --build-arg INTEG_SHA=<new-sha> -t agent-zero:local .
+FROM agent0ai/agent-zero:v2.6
+
+ARG INTEG_SHA=8890c882b4f177d8c5e38c74065c4d931febaf2e
+
+RUN cd /git/agent-zero \
+    && (git remote get-url fork >/dev/null 2>&1 \
+        || git remote add fork https://github.com/Zenetusken/agent-zero.git) \
+    && git fetch fork integration/live-deployment \
+    && git checkout "$INTEG_SHA" \
+    && git status --short | (! grep .) \
+    && git rev-parse HEAD
