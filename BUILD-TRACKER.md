@@ -4,7 +4,7 @@
 (all harness fixes applied) — its source branches, PRs, image checkpoints,
 deployment state, and the procedures to verify, rebuild, and migrate it.
 
-**Last updated:** 2026-08-02 19:50 UTC
+**Last updated:** 2026-08-02 20:30 UTC
 **Maintained at:** this file (`~/agent-zero/BUILD-TRACKER.md`) and mirrored on the
 fork branch `deploy/local-overlay` (`Zenetusken/agent-zero`).
 
@@ -167,7 +167,7 @@ Registry publishing (true `docker pull`) is blocked until: `docker login`
 
 ## 5. Watch list / open items
 
-- [ ] Container recreate onto v2.8 overlay STAGED — waiting for live user task (`NL2Koll9`) to finish; compose already points at rebuilt `agent-zero:local`
+- [ ] v2.8 flip BLOCKED — image `da1086144ae9` is FROM the v2.8 base but its `/git/agent-zero` seed is still the v2.6-based integration tree (`8890c882`); recreating onto it changes no code. Requires building a v2.8-based integration branch (5ff106a2 + all 4 fix arcs) and a fresh overlay before any recreate
 - [ ] PRs #1798–#1801, a0-connector#20 awaiting upstream review (no activity as of 2026-08-02; zero reviews, only self-comments)
 - [ ] Image not yet published to any registry (local daemon only; fork rebuild is the portable path)
 - [ ] `INTEG_SHA` is pinned — bump + rebuild when integration advances (§4.3)
@@ -191,3 +191,4 @@ Registry publishing (true `docker pull`) is blocked until: `docker login`
 | 2026-08-02 19:50 | PR-base audit vs v2.8: 4/5 branches exactly v2.8-based; #1798 was v2.7-based (`87e1e591`) → rebased onto `5ff106a2` (clean, 9 commits, head `bec6ea5f`, force-pushed). Suite on rebased branch: 1306 pass + 3 known-upstream stale-marker failures (fixed by #1799). conftest.py overlap documented on both PRs (#1799's superset wins). Integration unchanged at `8890c882` — already contains superior conftest; no re-merge needed. Nothing superseded by v2.8: upstream repairs target native-Responses transport, ours target chat-mode JSON envelope/truncation |
 | 2026-08-02 19:20 | **v2.8 upgrade prepared**: v2.8 tag == `5ff106a2` == exact PR base (zero rebase); overlay rebuilt FROM v2.8 (`da1086144ae9`); smoke test passed; suite green on v2.8 runtime (1324/0); usr backup `agent-zero-usr-20260802-184402.tar.gz`; recreate staged pending live task completion |
 | 2026-08-02 19:05 | Subagent curation: `agents.json` written via harness API (hacker/tiny-local disabled; normalizer stores deviations only). Verified at registry, prompt-menu, and runtime-guard levels. LIVE DeepSeek validation passed: disabled-profile guard fired RepairableException and model self-repaired with exact error; developer-profile delegation ran full A1 subordinate loop; zero protocol misformats in 22 log entries |
+| 2026-08-02 20:30 | **API slowness root-caused (measured, not guessed):** DeepSeek healthy (1.1s tiny call; 3.5–5.1s with thinking high/max @1.6k tokens); all `rl_*` limits = 0 (no client throttling); real cause = chat `NL2Koll9` history at ~2.79M chars ≈ **~700k tokens/call** (6.8MB chat.json) — every loop iteration + every misformat retry re-prefills it. Fix: chat `ctx_length` capped 1M→256k on Default/High/Off (Max keeps 1M), backup `presets.yaml.bak-20260802-202148`, run_ui restarted, all 6 services RUNNING, presets re-verified from new process. **Correction to 19:20 entry:** overlay `da1086144ae9` is FROM v2.8 base but seeds old integration `8890c882` — v2.8 flip is NOT staged, needs a v2.8-based integration rebuild first |
