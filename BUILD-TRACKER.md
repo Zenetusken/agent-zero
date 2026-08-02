@@ -4,7 +4,7 @@
 (all harness fixes applied) — its source branches, PRs, image checkpoints,
 deployment state, and the procedures to verify, rebuild, and migrate it.
 
-**Last updated:** 2026-08-02 20:45 UTC
+**Last updated:** 2026-08-02 20:55 UTC
 **Maintained at:** this file (`~/agent-zero/BUILD-TRACKER.md`) and mirrored on the
 fork branch `deploy/local-overlay` (`Zenetusken/agent-zero`).
 
@@ -79,12 +79,24 @@ migration). The stock image's boot mechanism is what makes a durable patch possi
    shows mode-only diffs (lost exec bits); restore with `chmod +x` on the two
    affected scripts or `git checkout -- .` (done 2026-08-02 after the v2.8
    recreate).
+5. v2.8 subprocess-test init pattern: the **top-level** `/a0/runtime.py` shim was
+   removed upstream, so plain `import runtime` no longer works. `helpers/runtime.py`
+   is intact and unchanged — use:
+
+   ```python
+   import sys; sys.argv.append("--dockerized=true")
+   from dotenv import load_dotenv; load_dotenv("/a0/usr/.env")
+   from helpers import runtime; runtime.initialize()   # global init (was top-level runtime)
+   import initialize                                   # only if you need initialize_agent()/AgentConfig
+   ```
+
+   Validated live 2026-08-02 (`is_dockerized()` → True, runtime id assigned).
 
 `compose.yaml` points at `agent-zero:local`, so recreation always comes up patched.
 Validated live 2026-08-02: container recreated from image `10df87c3a26f` came up at
-`b18b3a10` on the v2.8 runtime with all fixes and all usr config intact. Note for
-v2.8 subprocess tests: `runtime.py` no longer exists — use `initialize.py`
-(`initialize_agent`). Retire the overlay once upstream merges the PRs.
+`b18b3a10` on the v2.8 runtime with all fixes and all usr config intact. Subprocess
+test harnesses: use the §3-point-5 init pattern (top-level `runtime.py` shim was
+removed in v2.8). Retire the overlay once upstream merges the PRs.
 
 ### Data checkpoints (secrets-bearing — keep private)
 
@@ -198,4 +210,4 @@ Registry publishing (true `docker pull`) is blocked until: `docker login`
 | 2026-08-02 19:20 | **v2.8 upgrade prepared**: v2.8 tag == `5ff106a2` == exact PR base (zero rebase); overlay rebuilt FROM v2.8 (`da1086144ae9`); smoke test passed; suite green on v2.8 runtime (1324/0); usr backup `agent-zero-usr-20260802-184402.tar.gz`; recreate staged pending live task completion |
 | 2026-08-02 19:05 | Subagent curation: `agents.json` written via harness API (hacker/tiny-local disabled; normalizer stores deviations only). Verified at registry, prompt-menu, and runtime-guard levels. LIVE DeepSeek validation passed: disabled-profile guard fired RepairableException and model self-repaired with exact error; developer-profile delegation ran full A1 subordinate loop; zero protocol misformats in 22 log entries |
 | 2026-08-02 20:30 | **API slowness root-caused (measured, not guessed):** DeepSeek healthy (1.1s tiny call; 3.5–5.1s with thinking high/max @1.6k tokens); all `rl_*` limits = 0 (no client throttling); real cause = chat `NL2Koll9` history at ~2.79M chars ≈ **~700k tokens/call** (6.8MB chat.json) — every loop iteration + every misformat retry re-prefills it. Fix: chat `ctx_length` capped 1M→256k on Default/High/Off (Max keeps 1M), backup `presets.yaml.bak-20260802-202148`, run_ui restarted, all 6 services RUNNING, presets re-verified from new process. **Correction to 19:20 entry:** overlay `da1086144ae9` is FROM v2.8 base but seeds old integration `8890c882` — v2.8 flip is NOT staged, needs a v2.8-based integration rebuild first |
-| 2026-08-02 20:40 | **v2.8 flip COMPLETE**: `integration/v2.8-deployment` built from `5ff106a2` + all 4 arcs (head `b18b3a10`; only conflict = expected `tests/conftest.py` add/add, resolved to #1799 superset per documented rule). Suite on merged tree via v2.8 runtime: **1324 passed, 0 failed, 1 skipped**. Overlay rebuilt (`10df87c3a26f`, `INTEG_SHA=b18b3a10`); usr backup `agent-zero-usr-20260802-202716.tar.gz`; container recreated during user-confirmed idle window. Post-recreate verified: `/a0` @ `b18b3a10`, all 4 fix arcs present (truncation detector smoke-tested live), settings (agent0 profile, circuit breaker 5), presets (256k chat caps), project instructions (9604 chars), subagent curation (`agents.json`), chats (7.3MB NL2Koll9) all intact; 6/6 services RUNNING; UI 302; ports 80/55520 LISTENING. Mode-only seed diffs re-fixed via chmod. Gotcha recorded: v2.8 has no `runtime.py` — use `initialize.py` |
+| 2026-08-02 20:40 | **v2.8 flip COMPLETE**: `integration/v2.8-deployment` built from `5ff106a2` + all 4 arcs (head `b18b3a10`; only conflict = expected `tests/conftest.py` add/add, resolved to #1799 superset per documented rule). Suite on merged tree via v2.8 runtime: **1324 passed, 0 failed, 1 skipped**. Overlay rebuilt (`10df87c3a26f`, `INTEG_SHA=b18b3a10`); usr backup `agent-zero-usr-20260802-202716.tar.gz`; container recreated during user-confirmed idle window. Post-recreate verified: `/a0` @ `b18b3a10`, all 4 fix arcs present (truncation detector smoke-tested live), settings (agent0 profile, circuit breaker 5), presets (256k chat caps), project instructions (9604 chars), subagent curation (`agents.json`), chats (7.3MB NL2Koll9) all intact; 6/6 services RUNNING; UI 302; ports 80/55520 LISTENING. Mode-only seed diffs re-fixed via chmod. Gotcha recorded: v2.8 removed the top-level `runtime.py` shim — `helpers/runtime.py` is intact; see §3 point 5 for the corrected subprocess init pattern |
