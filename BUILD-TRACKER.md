@@ -4,7 +4,7 @@
 (all harness fixes applied) — its source branches, PRs, image checkpoints,
 deployment state, and the procedures to verify, rebuild, and migrate it.
 
-**Last updated:** 2026-08-02 17:43 UTC
+**Last updated:** 2026-08-02 17:59 UTC
 **Maintained at:** this file (`~/agent-zero/BUILD-TRACKER.md`) and mirrored on the
 fork branch `deploy/local-overlay` (`Zenetusken/agent-zero`).
 
@@ -54,8 +54,34 @@ All PRs: OPEN, MERGEABLE, no upstream CI configured. GitHub head == local == for
 | Test status at integration | **1324 passed, 0 failed, 1 skipped** (throwaway-container suite, read-only usr mount) |
 | Image | `agent-zero:local`, ID `9c37627520fe`, built 2026-08-02 12:22 EDT |
 | Image recipe | `Dockerfile.local-overlay`: `FROM agent0ai/agent-zero:v2.6` → fetch fork → `git checkout $INTEG_SHA` in `/git/agent-zero` (build-arg `INTEG_SHA`, default `8890c882…`) |
-| Deploy branch | `deploy/local-overlay` @ `46284073` — standalone 2-file branch (Dockerfile + compose) for any-host rebuild |
+| Deploy branch | `deploy/local-overlay` (see branch head) — standalone branch (Dockerfile + compose + this tracker) for any-host rebuild. Note: no SHA pinned here — every update to this file advances the branch, so a pinned value would be self-invalidating |
 | Live container | `/a0` and `/git/agent-zero` both at `8890c882`, tree clean; all 6 supervisord services RUNNING |
+
+### How the overlay works (why `/git/agent-zero` is the lever)
+
+A container = read-only **image** + ephemeral **writable layer**. Edits made to `/a0`
+in a running container live in the writable layer: they survive `docker restart`
+but are discarded on **recreation** (compose change, `docker compose up`, host
+migration). The stock image's boot mechanism is what makes a durable patch possible:
+
+1. At upstream image build time, the repo is cloned into **`/git/agent-zero`** — a
+   pristine seed baked into the image (`/ins/install_A0.sh`).
+2. At every container start, `/exe/run_A0.sh` sources **`/ins/copy_A0.sh`**, which
+   copies the seed into `/a0` **only if `/a0/run_ui.py` is missing** and with
+   `cp -rn` (no-clobber) — so it populates a fresh `/a0` once and never overwrites
+   an existing install afterward. Startup scripts perform **no** git resets.
+3. Therefore: whatever tree the seed contains is what every recreated container
+   starts with. The overlay (`Dockerfile.local-overlay`) adds one thin layer to
+   stock v2.6 that fetches the fork's integration branch and checks out
+   `$INTEG_SHA` **in the seed**. No recompilation, no venv changes — the runtime
+   is byte-identical to stock except for the patched source tree.
+4. Side effect of `cp --no-preserve=mode`: after seeding, `git status` in `/a0`
+   shows mode-only diffs (lost exec bits); a one-time `git checkout -- .` restores
+   canonical modes (done in §4.3).
+
+`compose.yaml` points at `agent-zero:local`, so recreation always comes up patched.
+Validated live 2026-08-02: container recreated from the image came up at
+`8890c882` with a clean tree. Retire the overlay once upstream merges the PRs.
 
 ### Data checkpoints (secrets-bearing — keep private)
 
@@ -159,3 +185,4 @@ Registry publishing (true `docker pull`) is blocked until: `docker login`
 | 2026-08-02 | Live-agent test edit folded into #1801 (`c8670019`); 3 stale-marker fixes added to #1799 (`187faf84`); integration `8890c882` fully green (1324/0) |
 | 2026-08-02 | Overlay image `9c37627520fe` built; container recreated onto `agent-zero:local`; seed mechanism validated live |
 | 2026-08-02 | `deploy/local-overlay` branch published (`46284073`); this tracker created |
+| 2026-08-02 17:59 | Tracker §3 expanded with the full overlay/seed mechanism explanation; deploy-branch SHA reference de-pinned (self-invalidating) |
