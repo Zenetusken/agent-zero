@@ -4,7 +4,7 @@
 (all harness fixes applied) — its source branches, PRs, image checkpoints,
 deployment state, and the procedures to verify, rebuild, and migrate it.
 
-**Last updated:** 2026-08-02 17:59 UTC
+**Last updated:** 2026-08-02 18:15 UTC
 **Maintained at:** this file (`~/agent-zero/BUILD-TRACKER.md`) and mirrored on the
 fork branch `deploy/local-overlay` (`Zenetusken/agent-zero`).
 
@@ -87,7 +87,7 @@ Validated live 2026-08-02: container recreated from the image came up at
 
 | Checkpoint | Value |
 |---|---|
-| usr volume backup | `~/agent-zero/backups/agent-zero-usr-20260801-200256.tar.gz` (2.5 MB; presets, settings, API keys, chats) |
+| usr volume backups | `agent-zero-usr-20260801-200256.tar.gz` (2.5 MB), `agent-zero-usr-20260802-180437.tar.gz` (0.8 MB, latest — includes agent0 profile + new project instructions) in `~/agent-zero/backups/` |
 | Forensic artifacts | `~/agent-zero/debug/` (mode 700; browser-harness patch, failure extracts, connector log) |
 | compose backups | `~/agent-zero/compose.yaml.backup-20260801-222814`, `…-20260802-122238` |
 
@@ -171,7 +171,7 @@ Registry publishing (true `docker pull`) is blocked until: `docker login`
 - [ ] Image not yet published to any registry (local daemon only; fork rebuild is the portable path)
 - [ ] `INTEG_SHA` is pinned — bump + rebuild when integration advances (§4.3)
 - [ ] Do NOT delete fork or PR branches while PRs are open (kills the PRs)
-- [ ] usr volume backup predates latest preset/settings state — refresh before host migration: `docker run --rm -v agent_zero_usr:/data:ro -v ~/agent-zero/backups:/backup alpine sh -c 'tar -czf /backup/agent-zero-usr-$(date +%Y%m%d-%H%M%S).tar.gz -C /data .'`
+- [x] ~~usr volume backup predates latest settings~~ — refreshed 2026-08-02 18:04 UTC (`agent-zero-usr-20260802-180437.tar.gz`)
 - [ ] 4 read-only-mount test artifacts documented in §4.2 are not product bugs
 
 ## 6. Changelog
@@ -186,3 +186,4 @@ Registry publishing (true `docker pull`) is blocked until: `docker login`
 | 2026-08-02 | Overlay image `9c37627520fe` built; container recreated onto `agent-zero:local`; seed mechanism validated live |
 | 2026-08-02 | `deploy/local-overlay` branch published (`46284073`); this tracker created |
 | 2026-08-02 17:59 | Tracker §3 expanded with the full overlay/seed mechanism explanation; deploy-branch SHA reference de-pinned (self-invalidating) |
+| 2026-08-02 18:15 | Harness config: agent profile `default`→`agent0` (settings.json); project instructions replaced with closed-loop coding workflow (9604 chars, `project.json`); verified via `build_system_prompt_vars` + `initialize_agent`; run_ui restarted; fresh usr backup taken |
