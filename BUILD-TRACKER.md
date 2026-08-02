@@ -4,7 +4,7 @@
 (all harness fixes applied) — its source branches, PRs, image checkpoints,
 deployment state, and the procedures to verify, rebuild, and migrate it.
 
-**Last updated:** 2026-08-02 20:30 UTC
+**Last updated:** 2026-08-02 20:45 UTC
 **Maintained at:** this file (`~/agent-zero/BUILD-TRACKER.md`) and mirrored on the
 fork branch `deploy/local-overlay` (`Zenetusken/agent-zero`).
 
@@ -21,7 +21,7 @@ fork branch `deploy/local-overlay` (`Zenetusken/agent-zero`).
 | Local clone (framework) | `~/src/agent-zero` | Remotes: `origin`=upstream, `fork`=Zenetusken |
 | Local clone (connector) | `~/src/a0-connector` | Same remote layout |
 | Worktrees | `/tmp/a0-integ` (integration), `/tmp/a0-browser-fix`, `/tmp/a0-test-suite`, `/tmp/a0-deploy`, `/tmp/a0-browser-base` (base ref `5ff106a2`) | Ephemeral; recreatable |
-| Docker image | `agent-zero:local` (`9c37627520fe`) | v2.6 + integration tree baked into `/git/agent-zero` seed |
+| Docker image | `agent-zero:local` (`10df87c3a26f`) | v2.8 runtime + v2.8-based integration tree baked into `/git/agent-zero` seed |
 | Container | `agent-zero` (compose: `~/agent-zero/compose.yaml`) | UI at `127.0.0.1:5080` |
 | Data volume | `agent_zero_usr` → `/a0/usr` | Settings, presets, secrets, chats — NOT in any image/repo |
 | Connector CLI (host) | uv tool `a0` @ `27000e38` | Started manually: `a0 --host http://localhost:5080 --no-docker-discovery --connect` (interactive login required) |
@@ -49,13 +49,13 @@ All PRs: OPEN, MERGEABLE, no upstream CI configured. GitHub head == local == for
 
 | Checkpoint | Value |
 |---|---|
-| Integration branch | `integration/live-deployment` (fork) = merges of all 4 agent-zero arcs |
-| Integration SHA (current) | `8890c882b4f177d8c5e38c74065c4d931febaf2e` |
-| Test status at integration | **1324 passed, 0 failed, 1 skipped** — verified on both v2.6 and v2.8 image runtimes (throwaway suite, read-only usr mount) |
-| Image | `agent-zero:local`, ID `da1086144ae9`, built 2026-08-02 ~14:10 EDT on **v2.8 base** (previous: `9c37627520fe` on v2.6) |
-| Image recipe | `Dockerfile.local-overlay`: `FROM agent0ai/agent-zero:v2.8` → fetch fork → `git checkout $INTEG_SHA` in `/git/agent-zero` (build-arg `INTEG_SHA`, default `8890c882…`) |
+| Integration branch | `integration/v2.8-deployment` (fork) = `5ff106a2` + merges of all 4 agent-zero arcs (previous: `integration/live-deployment` @ `8890c882`, v2.6-based — retired) |
+| Integration SHA (current) | `b18b3a1047c70c7df74d24f6fd1fee339eca6648` |
+| Test status at integration | **1324 passed, 0 failed, 1 skipped** on the v2.8 image runtime (throwaway suite, read-only usr mount) |
+| Image | `agent-zero:local`, ID `10df87c3a26f`, built 2026-08-02 ~16:30 EDT on **v2.8 base** with v2.8-based seed (previous: `da1086144ae9` v2.8 base/old seed, `9c37627520fe` v2.6) |
+| Image recipe | `Dockerfile.local-overlay`: `FROM agent0ai/agent-zero:v2.8` → fetch fork `integration/v2.8-deployment` → `git checkout $INTEG_SHA` in `/git/agent-zero` (build-arg `INTEG_SHA`, default `b18b3a10…`) |
 | Deploy branch | `deploy/local-overlay` (see branch head) — standalone branch (Dockerfile + compose + this tracker) for any-host rebuild. Note: no SHA pinned here — every update to this file advances the branch, so a pinned value would be self-invalidating |
-| Live container | `/a0` and `/git/agent-zero` both at `8890c882`, tree clean; all 6 supervisord services RUNNING |
+| Live container | `/a0` at `b18b3a10` (v2.8 runtime), all 6 supervisord services RUNNING, UI 302, ports 80/55520 LISTENING, all config verified post-recreate |
 
 ### How the overlay works (why `/git/agent-zero` is the lever)
 
@@ -72,16 +72,19 @@ migration). The stock image's boot mechanism is what makes a durable patch possi
    an existing install afterward. Startup scripts perform **no** git resets.
 3. Therefore: whatever tree the seed contains is what every recreated container
    starts with. The overlay (`Dockerfile.local-overlay`) adds one thin layer to
-   stock v2.6 that fetches the fork's integration branch and checks out
+   stock v2.8 that fetches the fork's integration branch and checks out
    `$INTEG_SHA` **in the seed**. No recompilation, no venv changes — the runtime
    is byte-identical to stock except for the patched source tree.
 4. Side effect of `cp --no-preserve=mode`: after seeding, `git status` in `/a0`
-   shows mode-only diffs (lost exec bits); a one-time `git checkout -- .` restores
-   canonical modes (done in §4.3).
+   shows mode-only diffs (lost exec bits); restore with `chmod +x` on the two
+   affected scripts or `git checkout -- .` (done 2026-08-02 after the v2.8
+   recreate).
 
 `compose.yaml` points at `agent-zero:local`, so recreation always comes up patched.
-Validated live 2026-08-02: container recreated from the image came up at
-`8890c882` with a clean tree. Retire the overlay once upstream merges the PRs.
+Validated live 2026-08-02: container recreated from image `10df87c3a26f` came up at
+`b18b3a10` on the v2.8 runtime with all fixes and all usr config intact. Note for
+v2.8 subprocess tests: `runtime.py` no longer exists — use `initialize.py`
+(`initialize_agent`). Retire the overlay once upstream merges the PRs.
 
 ### Data checkpoints (secrets-bearing — keep private)
 
@@ -105,7 +108,7 @@ gh pr list --repo agent0ai/a0-connector --author Zenetusken --state open
 cd ~/src/agent-zero && git fetch fork && \
   for b in fix/deepseek-harness-reliability fix/test-suite-live-usr-guard \
            fix/timezone-auto-persistence fix/browser-harness-reliability \
-           integration/live-deployment; do
+           integration/v2.8-deployment; do
     echo "$b $(git rev-parse --short=8 $b) $(git rev-parse --short=8 fork/$b)"; done
 # Live container == integration
 docker exec -w /a0 agent-zero git rev-parse HEAD
@@ -116,11 +119,14 @@ docker exec agent-zero supervisorctl status        # expect 6 RUNNING
 ### 4.2 Full test suite (integration tree)
 
 ```bash
-docker run --rm -v /tmp/a0-integ:/a0 -v agent_zero_usr:/a0/usr:ro \
-  agent0ai/agent-zero:v2.6 sh -lc \
+docker run --rm -v /home/drei/src/agent-zero:/a0 -v agent_zero_usr:/a0/usr:ro \
+  agent0ai/agent-zero:v2.8 sh -lc \
   '/opt/venv-a0/bin/pip install -q pytest==9.1.1 pytest-asyncio==1.4.0 aiogram==3.30.0 \
    && cd /a0 && /opt/venv-a0/bin/python -m pytest tests/ -q'
 ```
+
+(With `~/src/agent-zero` checked out at the integration branch. `/tmp/a0-integ` still
+holds the retired v2.6-based integration tree.)
 
 Note: 4 tests (`test_http_auth_csrf` ×2, `test_defer_lifecycle`,
 `test_parallel_child_contexts_are_chats_not_tasks`) fail on branches lacking the
@@ -167,7 +173,7 @@ Registry publishing (true `docker pull`) is blocked until: `docker login`
 
 ## 5. Watch list / open items
 
-- [ ] v2.8 flip BLOCKED — image `da1086144ae9` is FROM the v2.8 base but its `/git/agent-zero` seed is still the v2.6-based integration tree (`8890c882`); recreating onto it changes no code. Requires building a v2.8-based integration branch (5ff106a2 + all 4 fix arcs) and a fresh overlay before any recreate
+- [x] ~~v2.8 flip BLOCKED~~ — DONE 2026-08-02 20:40 UTC: `integration/v2.8-deployment` built (`5ff106a2` + all 4 arcs, conftest add/add resolved per documented rule: #1799 superset), suite 1324/0 green, overlay `10df87c3a26f` rebuilt, container recreated and fully verified
 - [ ] PRs #1798–#1801, a0-connector#20 awaiting upstream review (no activity as of 2026-08-02; zero reviews, only self-comments)
 - [ ] Image not yet published to any registry (local daemon only; fork rebuild is the portable path)
 - [ ] `INTEG_SHA` is pinned — bump + rebuild when integration advances (§4.3)
@@ -192,3 +198,4 @@ Registry publishing (true `docker pull`) is blocked until: `docker login`
 | 2026-08-02 19:20 | **v2.8 upgrade prepared**: v2.8 tag == `5ff106a2` == exact PR base (zero rebase); overlay rebuilt FROM v2.8 (`da1086144ae9`); smoke test passed; suite green on v2.8 runtime (1324/0); usr backup `agent-zero-usr-20260802-184402.tar.gz`; recreate staged pending live task completion |
 | 2026-08-02 19:05 | Subagent curation: `agents.json` written via harness API (hacker/tiny-local disabled; normalizer stores deviations only). Verified at registry, prompt-menu, and runtime-guard levels. LIVE DeepSeek validation passed: disabled-profile guard fired RepairableException and model self-repaired with exact error; developer-profile delegation ran full A1 subordinate loop; zero protocol misformats in 22 log entries |
 | 2026-08-02 20:30 | **API slowness root-caused (measured, not guessed):** DeepSeek healthy (1.1s tiny call; 3.5–5.1s with thinking high/max @1.6k tokens); all `rl_*` limits = 0 (no client throttling); real cause = chat `NL2Koll9` history at ~2.79M chars ≈ **~700k tokens/call** (6.8MB chat.json) — every loop iteration + every misformat retry re-prefills it. Fix: chat `ctx_length` capped 1M→256k on Default/High/Off (Max keeps 1M), backup `presets.yaml.bak-20260802-202148`, run_ui restarted, all 6 services RUNNING, presets re-verified from new process. **Correction to 19:20 entry:** overlay `da1086144ae9` is FROM v2.8 base but seeds old integration `8890c882` — v2.8 flip is NOT staged, needs a v2.8-based integration rebuild first |
+| 2026-08-02 20:40 | **v2.8 flip COMPLETE**: `integration/v2.8-deployment` built from `5ff106a2` + all 4 arcs (head `b18b3a10`; only conflict = expected `tests/conftest.py` add/add, resolved to #1799 superset per documented rule). Suite on merged tree via v2.8 runtime: **1324 passed, 0 failed, 1 skipped**. Overlay rebuilt (`10df87c3a26f`, `INTEG_SHA=b18b3a10`); usr backup `agent-zero-usr-20260802-202716.tar.gz`; container recreated during user-confirmed idle window. Post-recreate verified: `/a0` @ `b18b3a10`, all 4 fix arcs present (truncation detector smoke-tested live), settings (agent0 profile, circuit breaker 5), presets (256k chat caps), project instructions (9604 chars), subagent curation (`agents.json`), chats (7.3MB NL2Koll9) all intact; 6/6 services RUNNING; UI 302; ports 80/55520 LISTENING. Mode-only seed diffs re-fixed via chmod. Gotcha recorded: v2.8 has no `runtime.py` — use `initialize.py` |
