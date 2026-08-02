@@ -4,7 +4,7 @@
 (all harness fixes applied) — its source branches, PRs, image checkpoints,
 deployment state, and the procedures to verify, rebuild, and migrate it.
 
-**Last updated:** 2026-08-02 19:20 UTC
+**Last updated:** 2026-08-02 19:50 UTC
 **Maintained at:** this file (`~/agent-zero/BUILD-TRACKER.md`) and mirrored on the
 fork branch `deploy/local-overlay` (`Zenetusken/agent-zero`).
 
@@ -35,7 +35,7 @@ Upstream base for all arcs: `5ff106a2` (2026-08-01, "Raise unusable response lim
 
 | Arc | Branch (fork) | Head SHA | PR | Validation |
 |---|---|---|---|---|
-| DeepSeek V4 Flash harness reliability | `fix/deepseek-harness-reliability` | `f31ce233` | [agent-zero#1798](https://github.com/agent0ai/agent-zero/pull/1798) | Targeted harness tests + core suite; truncation detector sanity checks |
+| DeepSeek V4 Flash harness reliability | `fix/deepseek-harness-reliability` | `bec6ea5f` (rebased 2026-08-02 from v2.7 base onto v2.8) | [agent-zero#1798](https://github.com/agent0ai/agent-zero/pull/1798) | Targeted harness tests + core suite; truncation detector sanity checks |
 | Test-suite usr guard + pollution + stale markers | `fix/test-suite-live-usr-guard` | `187faf84` | [agent-zero#1799](https://github.com/agent0ai/agent-zero/pull/1799) | Adversarial: failure set 7→4 with change; 3 stale markers fixed, 4 env-dependent (read-only `/a0/usr`) pre-existing |
 | Timezone auto-persistence | `fix/timezone-auto-persistence` | `057a8c78` | [agent-zero#1800](https://github.com/agent0ai/agent-zero/pull/1800) | Branch regression tests |
 | Browser harness reliability | `fix/browser-harness-reliability` | `c8670019` | [agent-zero#1801](https://github.com/agent0ai/agent-zero/pull/1801) | Failure set byte-identical vs base; forensic recovery of agent-written fixes + 3 review corrections |
@@ -188,5 +188,6 @@ Registry publishing (true `docker pull`) is blocked until: `docker login`
 | 2026-08-02 | `deploy/local-overlay` branch published (`46284073`); this tracker created |
 | 2026-08-02 17:59 | Tracker §3 expanded with the full overlay/seed mechanism explanation; deploy-branch SHA reference de-pinned (self-invalidating) |
 | 2026-08-02 18:15 | Harness config: agent profile `default`→`agent0` (settings.json); project instructions replaced with closed-loop coding workflow (9604 chars, `project.json`); verified via `build_system_prompt_vars` + `initialize_agent`; run_ui restarted; fresh usr backup taken |
+| 2026-08-02 19:50 | PR-base audit vs v2.8: 4/5 branches exactly v2.8-based; #1798 was v2.7-based (`87e1e591`) → rebased onto `5ff106a2` (clean, 9 commits, head `bec6ea5f`, force-pushed). Suite on rebased branch: 1306 pass + 3 known-upstream stale-marker failures (fixed by #1799). conftest.py overlap documented on both PRs (#1799's superset wins). Integration unchanged at `8890c882` — already contains superior conftest; no re-merge needed. Nothing superseded by v2.8: upstream repairs target native-Responses transport, ours target chat-mode JSON envelope/truncation |
 | 2026-08-02 19:20 | **v2.8 upgrade prepared**: v2.8 tag == `5ff106a2` == exact PR base (zero rebase); overlay rebuilt FROM v2.8 (`da1086144ae9`); smoke test passed; suite green on v2.8 runtime (1324/0); usr backup `agent-zero-usr-20260802-184402.tar.gz`; recreate staged pending live task completion |
 | 2026-08-02 19:05 | Subagent curation: `agents.json` written via harness API (hacker/tiny-local disabled; normalizer stores deviations only). Verified at registry, prompt-menu, and runtime-guard levels. LIVE DeepSeek validation passed: disabled-profile guard fired RepairableException and model self-repaired with exact error; developer-profile delegation ran full A1 subordinate loop; zero protocol misformats in 22 log entries |
