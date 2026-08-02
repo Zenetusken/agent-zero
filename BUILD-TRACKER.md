@@ -4,7 +4,7 @@
 (all harness fixes applied) — its source branches, PRs, image checkpoints,
 deployment state, and the procedures to verify, rebuild, and migrate it.
 
-**Last updated:** 2026-08-02 18:15 UTC
+**Last updated:** 2026-08-02 19:05 UTC
 **Maintained at:** this file (`~/agent-zero/BUILD-TRACKER.md`) and mirrored on the
 fork branch `deploy/local-overlay` (`Zenetusken/agent-zero`).
 
@@ -187,3 +187,4 @@ Registry publishing (true `docker pull`) is blocked until: `docker login`
 | 2026-08-02 | `deploy/local-overlay` branch published (`46284073`); this tracker created |
 | 2026-08-02 17:59 | Tracker §3 expanded with the full overlay/seed mechanism explanation; deploy-branch SHA reference de-pinned (self-invalidating) |
 | 2026-08-02 18:15 | Harness config: agent profile `default`→`agent0` (settings.json); project instructions replaced with closed-loop coding workflow (9604 chars, `project.json`); verified via `build_system_prompt_vars` + `initialize_agent`; run_ui restarted; fresh usr backup taken |
+| 2026-08-02 19:05 | Subagent curation: `agents.json` written via harness API (hacker/tiny-local disabled; normalizer stores deviations only). Verified at registry, prompt-menu, and runtime-guard levels. LIVE DeepSeek validation passed: disabled-profile guard fired RepairableException and model self-repaired with exact error; developer-profile delegation ran full A1 subordinate loop; zero protocol misformats in 22 log entries |
