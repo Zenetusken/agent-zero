@@ -2,7 +2,7 @@ services:
   agent-zero:
     # Local overlay: stock v2.8 runtime + harness-fix integration tree baked into
     # the /git/agent-zero seed (fork Zenetusken/agent-zero,
-    # integration/v2.8-deployment @ b18b3a10). Rebuild via
+    # integration/v2.8-deployment @ 1ef91c61). Rebuild via
     # Dockerfile.local-overlay, then recreate the container for the seed to take
     # effect. Fallback: agent0ai/agent-zero:v2.8
     image: agent-zero:local

@@ -9,7 +9,7 @@
 #   docker build -f Dockerfile.local-overlay --build-arg INTEG_SHA=<new-sha> -t agent-zero:local .
 FROM agent0ai/agent-zero:v2.8
 
-ARG INTEG_SHA=b18b3a1047c70c7df74d24f6fd1fee339eca6648
+ARG INTEG_SHA=1ef91c61cd61f6e5bfa3d786b9b9372967d0f95a
 
 RUN cd /git/agent-zero \
     && (git remote get-url fork >/dev/null 2>&1 \

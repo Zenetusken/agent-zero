@@ -4,7 +4,7 @@
 (all harness fixes applied) — its source branches, PRs, image checkpoints,
 deployment state, and the procedures to verify, rebuild, and migrate it.
 
-**Last updated:** 2026-08-02 20:55 UTC
+**Last updated:** 2026-08-02 21:35 UTC
 **Maintained at:** this file (`~/agent-zero/BUILD-TRACKER.md`) and mirrored on the
 fork branch `deploy/local-overlay` (`Zenetusken/agent-zero`).
 
@@ -21,7 +21,7 @@ fork branch `deploy/local-overlay` (`Zenetusken/agent-zero`).
 | Local clone (framework) | `~/src/agent-zero` | Remotes: `origin`=upstream, `fork`=Zenetusken |
 | Local clone (connector) | `~/src/a0-connector` | Same remote layout |
 | Worktrees | `/tmp/a0-integ` (integration), `/tmp/a0-browser-fix`, `/tmp/a0-test-suite`, `/tmp/a0-deploy`, `/tmp/a0-browser-base` (base ref `5ff106a2`) | Ephemeral; recreatable |
-| Docker image | `agent-zero:local` (`10df87c3a26f`) | v2.8 runtime + v2.8-based integration tree baked into `/git/agent-zero` seed |
+| Docker image | `agent-zero:local` (`46998bdb2a27`) | v2.8 runtime + v2.8-based integration tree baked into `/git/agent-zero` seed |
 | Container | `agent-zero` (compose: `~/agent-zero/compose.yaml`) | UI at `127.0.0.1:5080` |
 | Data volume | `agent_zero_usr` → `/a0/usr` | Settings, presets, secrets, chats — NOT in any image/repo |
 | Connector CLI (host) | uv tool `a0` @ `27000e38` | Started manually: `a0 --host http://localhost:5080 --no-docker-discovery --connect` (interactive login required) |
@@ -39,6 +39,7 @@ Upstream base for all arcs: `5ff106a2` (2026-08-01, "Raise unusable response lim
 | Test-suite usr guard + pollution + stale markers | `fix/test-suite-live-usr-guard` | `187faf84` | [agent-zero#1799](https://github.com/agent0ai/agent-zero/pull/1799) | Adversarial: failure set 7→4 with change; 3 stale markers fixed, 4 env-dependent (read-only `/a0/usr`) pre-existing |
 | Timezone auto-persistence | `fix/timezone-auto-persistence` | `057a8c78` | [agent-zero#1800](https://github.com/agent0ai/agent-zero/pull/1800) | Branch regression tests |
 | Browser harness reliability | `fix/browser-harness-reliability` | `c8670019` | [agent-zero#1801](https://github.com/agent0ai/agent-zero/pull/1801) | Failure set byte-identical vs base; forensic recovery of agent-written fixes + 3 review corrections |
+| Web UI stale progress after reconnect | `fix/webui-stale-progress-reconnect` | `32291be0` | [agent-zero#1803](https://github.com/agent0ai/agent-zero/pull/1803) | 4 ordering tests (3 discriminating: fail on pre-fix v2.8, pass with fix); suite 1328/0; `node --check` clean |
 | CLI unbounded reconnect | `fix/unbounded-reconnect` (connector fork) | `27000e38` | [a0-connector#20](https://github.com/agent0ai/a0-connector/pull/20) | 3 discriminating tests; failure set byte-identical to baseline |
 
 All PRs: OPEN, MERGEABLE, no upstream CI configured. GitHub head == local == fork (verified 2026-08-02).
@@ -50,12 +51,12 @@ All PRs: OPEN, MERGEABLE, no upstream CI configured. GitHub head == local == for
 | Checkpoint | Value |
 |---|---|
 | Integration branch | `integration/v2.8-deployment` (fork) = `5ff106a2` + merges of all 4 agent-zero arcs (previous: `integration/live-deployment` @ `8890c882`, v2.6-based — retired) |
-| Integration SHA (current) | `b18b3a1047c70c7df74d24f6fd1fee339eca6648` |
+| Integration SHA (current) | `1ef91c61cd61f6e5bfa3d786b9b9372967d0f95a` |
 | Test status at integration | **1324 passed, 0 failed, 1 skipped** on the v2.8 image runtime (throwaway suite, read-only usr mount) |
-| Image | `agent-zero:local`, ID `10df87c3a26f`, built 2026-08-02 ~16:30 EDT on **v2.8 base** with v2.8-based seed (previous: `da1086144ae9` v2.8 base/old seed, `9c37627520fe` v2.6) |
-| Image recipe | `Dockerfile.local-overlay`: `FROM agent0ai/agent-zero:v2.8` → fetch fork `integration/v2.8-deployment` → `git checkout $INTEG_SHA` in `/git/agent-zero` (build-arg `INTEG_SHA`, default `b18b3a10…`) |
+| Image | `agent-zero:local`, ID `46998bdb2a27`, built 2026-08-02 ~17:30 EDT on **v2.8 base** with v2.8-based seed (previous: `10df87c3a26f`, `da1086144ae9`, `9c37627520fe`) |
+| Image recipe | `Dockerfile.local-overlay`: `FROM agent0ai/agent-zero:v2.8` → fetch fork `integration/v2.8-deployment` → `git checkout $INTEG_SHA` in `/git/agent-zero` (build-arg `INTEG_SHA`, default `1ef91c61…`) |
 | Deploy branch | `deploy/local-overlay` (see branch head) — standalone branch (Dockerfile + compose + this tracker) for any-host rebuild. Note: no SHA pinned here — every update to this file advances the branch, so a pinned value would be self-invalidating |
-| Live container | `/a0` at `b18b3a10` (v2.8 runtime), all 6 supervisord services RUNNING, UI 302, ports 80/55520 LISTENING, all config verified post-recreate |
+| Live container | `/a0` at `1ef91c61` (v2.8 runtime), all 6 supervisord services RUNNING, UI 302, webui stale-progress fix live at `webui/index.js:416` |
 
 ### How the overlay works (why `/git/agent-zero` is the lever)
 
@@ -186,7 +187,7 @@ Registry publishing (true `docker pull`) is blocked until: `docker login`
 ## 5. Watch list / open items
 
 - [x] ~~v2.8 flip BLOCKED~~ — DONE 2026-08-02 20:40 UTC: `integration/v2.8-deployment` built (`5ff106a2` + all 4 arcs, conftest add/add resolved per documented rule: #1799 superset), suite 1324/0 green, overlay `10df87c3a26f` rebuilt, container recreated and fully verified
-- [ ] PRs #1798–#1801, a0-connector#20 awaiting upstream review (no activity as of 2026-08-02; zero reviews, only self-comments)
+- [ ] PRs #1798–#1801, #1803, a0-connector#20 awaiting upstream review (no activity as of 2026-08-02; zero reviews, only self-comments)
 - [ ] Image not yet published to any registry (local daemon only; fork rebuild is the portable path)
 - [ ] `INTEG_SHA` is pinned — bump + rebuild when integration advances (§4.3)
 - [ ] Do NOT delete fork or PR branches while PRs are open (kills the PRs)
@@ -211,3 +212,4 @@ Registry publishing (true `docker pull`) is blocked until: `docker login`
 | 2026-08-02 19:05 | Subagent curation: `agents.json` written via harness API (hacker/tiny-local disabled; normalizer stores deviations only). Verified at registry, prompt-menu, and runtime-guard levels. LIVE DeepSeek validation passed: disabled-profile guard fired RepairableException and model self-repaired with exact error; developer-profile delegation ran full A1 subordinate loop; zero protocol misformats in 22 log entries |
 | 2026-08-02 20:30 | **API slowness root-caused (measured, not guessed):** DeepSeek healthy (1.1s tiny call; 3.5–5.1s with thinking high/max @1.6k tokens); all `rl_*` limits = 0 (no client throttling); real cause = chat `NL2Koll9` history at ~2.79M chars ≈ **~700k tokens/call** (6.8MB chat.json) — every loop iteration + every misformat retry re-prefills it. Fix: chat `ctx_length` capped 1M→256k on Default/High/Off (Max keeps 1M), backup `presets.yaml.bak-20260802-202148`, run_ui restarted, all 6 services RUNNING, presets re-verified from new process. **Correction to 19:20 entry:** overlay `da1086144ae9` is FROM v2.8 base but seeds old integration `8890c882` — v2.8 flip is NOT staged, needs a v2.8-based integration rebuild first |
 | 2026-08-02 20:40 | **v2.8 flip COMPLETE**: `integration/v2.8-deployment` built from `5ff106a2` + all 4 arcs (head `b18b3a10`; only conflict = expected `tests/conftest.py` add/add, resolved to #1799 superset per documented rule). Suite on merged tree via v2.8 runtime: **1324 passed, 0 failed, 1 skipped**. Overlay rebuilt (`10df87c3a26f`, `INTEG_SHA=b18b3a10`); usr backup `agent-zero-usr-20260802-202716.tar.gz`; container recreated during user-confirmed idle window. Post-recreate verified: `/a0` @ `b18b3a10`, all 4 fix arcs present (truncation detector smoke-tested live), settings (agent0 profile, circuit breaker 5), presets (256k chat caps), project instructions (9604 chars), subagent curation (`agents.json`), chats (7.3MB NL2Koll9) all intact; 6/6 services RUNNING; UI 302; ports 80/55520 LISTENING. Mode-only seed diffs re-fixed via chmod. Gotcha recorded: v2.8 removed the top-level `runtime.py` shim — `helpers/runtime.py` is intact; see §3 point 5 for the corrected subprocess init pattern |
+| 2026-08-02 21:35 | **Web UI/CLI split-brain root-caused and fixed (arc 6)**: CLI finished vs Web UI stuck on "A0: Reasoning..." after the 20:28 recreate. Measured: backend verifiably idle (py-spy all threads parked, log frozen at final `response` 20:42, queue empty) → backend correct; root cause = frontend `applySnapshot` sequenced `updateProgress`/`paused`/notifications **behind** `await setMessages(...)`, so a 543-entry/7.5MB re-render kept a stale indicator until the backlog drained. Token accounting reconciled: harness-true history = **322.5k tokens** (`history.get_tokens()`; CLI's 339.7k = history + system prompt) — earlier chars/4 estimate (~700k) was 2x over. Fix `32291be0` on `fix/webui-stale-progress-reconnect` → **PR #1803**; merged into integration (`1ef91c61`); suite 1328/0; overlay `46998bdb2a27`; container recreated, fix live |
