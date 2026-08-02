@@ -4,7 +4,7 @@
 (all harness fixes applied) — its source branches, PRs, image checkpoints,
 deployment state, and the procedures to verify, rebuild, and migrate it.
 
-**Last updated:** 2026-08-02 19:05 UTC
+**Last updated:** 2026-08-02 19:20 UTC
 **Maintained at:** this file (`~/agent-zero/BUILD-TRACKER.md`) and mirrored on the
 fork branch `deploy/local-overlay` (`Zenetusken/agent-zero`).
 
@@ -51,9 +51,9 @@ All PRs: OPEN, MERGEABLE, no upstream CI configured. GitHub head == local == for
 |---|---|
 | Integration branch | `integration/live-deployment` (fork) = merges of all 4 agent-zero arcs |
 | Integration SHA (current) | `8890c882b4f177d8c5e38c74065c4d931febaf2e` |
-| Test status at integration | **1324 passed, 0 failed, 1 skipped** (throwaway-container suite, read-only usr mount) |
-| Image | `agent-zero:local`, ID `9c37627520fe`, built 2026-08-02 12:22 EDT |
-| Image recipe | `Dockerfile.local-overlay`: `FROM agent0ai/agent-zero:v2.6` → fetch fork → `git checkout $INTEG_SHA` in `/git/agent-zero` (build-arg `INTEG_SHA`, default `8890c882…`) |
+| Test status at integration | **1324 passed, 0 failed, 1 skipped** — verified on both v2.6 and v2.8 image runtimes (throwaway suite, read-only usr mount) |
+| Image | `agent-zero:local`, ID `da1086144ae9`, built 2026-08-02 ~14:10 EDT on **v2.8 base** (previous: `9c37627520fe` on v2.6) |
+| Image recipe | `Dockerfile.local-overlay`: `FROM agent0ai/agent-zero:v2.8` → fetch fork → `git checkout $INTEG_SHA` in `/git/agent-zero` (build-arg `INTEG_SHA`, default `8890c882…`) |
 | Deploy branch | `deploy/local-overlay` (see branch head) — standalone branch (Dockerfile + compose + this tracker) for any-host rebuild. Note: no SHA pinned here — every update to this file advances the branch, so a pinned value would be self-invalidating |
 | Live container | `/a0` and `/git/agent-zero` both at `8890c882`, tree clean; all 6 supervisord services RUNNING |
 
@@ -167,6 +167,7 @@ Registry publishing (true `docker pull`) is blocked until: `docker login`
 
 ## 5. Watch list / open items
 
+- [ ] Container recreate onto v2.8 overlay STAGED — waiting for live user task (`NL2Koll9`) to finish; compose already points at rebuilt `agent-zero:local`
 - [ ] PRs #1798–#1801, a0-connector#20 awaiting upstream review (no activity as of 2026-08-02; zero reviews, only self-comments)
 - [ ] Image not yet published to any registry (local daemon only; fork rebuild is the portable path)
 - [ ] `INTEG_SHA` is pinned — bump + rebuild when integration advances (§4.3)
@@ -187,4 +188,5 @@ Registry publishing (true `docker pull`) is blocked until: `docker login`
 | 2026-08-02 | `deploy/local-overlay` branch published (`46284073`); this tracker created |
 | 2026-08-02 17:59 | Tracker §3 expanded with the full overlay/seed mechanism explanation; deploy-branch SHA reference de-pinned (self-invalidating) |
 | 2026-08-02 18:15 | Harness config: agent profile `default`→`agent0` (settings.json); project instructions replaced with closed-loop coding workflow (9604 chars, `project.json`); verified via `build_system_prompt_vars` + `initialize_agent`; run_ui restarted; fresh usr backup taken |
+| 2026-08-02 19:20 | **v2.8 upgrade prepared**: v2.8 tag == `5ff106a2` == exact PR base (zero rebase); overlay rebuilt FROM v2.8 (`da1086144ae9`); smoke test passed; suite green on v2.8 runtime (1324/0); usr backup `agent-zero-usr-20260802-184402.tar.gz`; recreate staged pending live task completion |
 | 2026-08-02 19:05 | Subagent curation: `agents.json` written via harness API (hacker/tiny-local disabled; normalizer stores deviations only). Verified at registry, prompt-menu, and runtime-guard levels. LIVE DeepSeek validation passed: disabled-profile guard fired RepairableException and model self-repaired with exact error; developer-profile delegation ran full A1 subordinate loop; zero protocol misformats in 22 log entries |
